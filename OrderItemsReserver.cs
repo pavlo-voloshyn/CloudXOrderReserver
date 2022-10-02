@@ -14,17 +14,17 @@ using Newtonsoft.Json;
 
 namespace OrderItemsReserver
 {
-    public class UploadOrderFile
+    public class OrderItemsReserver
     {
-        private readonly ILogger<UploadOrderFile> _logger;
+        private readonly ILogger<OrderItemsReserver> _logger;
         private const string SUCCESS_MESSAGE = "Order file uploaded successfully";
 
-        public UploadOrderFile(ILogger<UploadOrderFile> log)
+        public OrderItemsReserver(ILogger<OrderItemsReserver> log)
         {
             _logger = log;
         }
 
-        [FunctionName("UploadOrderFile")]
+        [FunctionName("OrderItemsReserver")]
         [OpenApiOperation(operationId: "Run", tags: new[] { "order" })]
         [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(object), Description = "order", Required = true)]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(string), Description = "The OK response")]
