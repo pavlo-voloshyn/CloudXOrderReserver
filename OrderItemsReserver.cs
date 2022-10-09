@@ -1,10 +1,13 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
@@ -31,18 +34,26 @@ namespace OrderItemsReserver
         public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req)
         {
-            string orderBlobName = $"{Guid.NewGuid()}.json";
-            _logger.LogInformation($"Start processing {orderBlobName}");
+            string orderId = Guid.NewGuid().ToString();
+            _logger.LogInformation($"Start processing {orderId}");
 
             try
             {
-                string Connection = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
-                string containerName = Environment.GetEnvironmentVariable("ContainerName");
+                var reader = new StreamReader(req.Body);
+                reader.BaseStream.Seek(0, SeekOrigin.Begin);
+                var order = reader.ReadToEnd();
 
-                var blobClient = new BlobContainerClient(Connection, containerName);
-                var orderBlobClient = blobClient.GetBlobClient(orderBlobName);
-                await orderBlobClient.UploadAsync(req.Body);
+                using (CosmosClient client = new(Environment.GetEnvironmentVariable("CosmosDbConnectionString")))
+                {
+                    var database = client.GetDatabase(Environment.GetEnvironmentVariable("CosmosDb"));
+                    var container = database.GetContainer(Environment.GetEnvironmentVariable("Container"));
+                    await container.CreateItemAsync(new
+                    {
+                        id = orderId,
+                        Order = order
+                    });
 
+                }
                 return new OkObjectResult(SUCCESS_MESSAGE);
 
             } catch (Exception ex)
